@@ -14,6 +14,10 @@ skills/
     SKILL.md
     agents/openai.yaml
     references/commands.md
+  scc/
+    SKILL.md
+    agents/openai.yaml
+    references/command-guide.md
 ```
 
 Add future skills as sibling folders under `skills/`.

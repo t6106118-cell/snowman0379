@@ -1,0 +1,4 @@
+interface:
+  display_name: "scc"
+  short_description: "Codebase metrics and LOC triage"
+  default_prompt: "Use $scc to measure this repository and identify the largest or most complex areas to inspect."
