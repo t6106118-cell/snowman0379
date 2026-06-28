@@ -1,0 +1,4 @@
+interface:
+  display_name: "qsv"
+  short_description: "CSV inspection, analysis, and conversion"
+  default_prompt: "Use $qsv to inspect, validate, analyze, transform, or convert CSV and tabular data."
