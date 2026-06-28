@@ -1,0 +1,4 @@
+interface:
+  display_name: "ast-grep"
+  short_description: "Syntax-aware code search and rewrite"
+  default_prompt: "Use $ast-grep to find syntax-aware code patterns and suggest safe search or rewrite commands."
