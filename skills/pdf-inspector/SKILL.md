@@ -1,161 +1,163 @@
 ---
 name: pdf-inspector
-description: Fast local PDF classification, layout analysis, text extraction, and structured Markdown conversion with the installed PDF Inspector CLI. Use when Codex needs to convert a native-text PDF to Markdown, identify scanned or mixed pages that require OCR, inspect tables or multi-column layout, extract selected pages, obtain positioned text JSON, compare PDF extraction quality, or debug PDF content operators. Prefer publisher HTML/XML for authoritative research text and use OCR before conversion for image-only PDFs.
+description: Use when Codex needs to convert a local PDF to Markdown, read or inspect PDF content, classify text-based, mixed, or scanned documents, extract selected pages or positioned-text JSON, inspect tables, columns, and encoding, determine whether OCR is needed, or debug pdf-inspector extraction. Do not use for creating, merging, rotating, or editing PDFs.
 ---
 
 # PDF Inspector
 
-Use the installed `pdf2md`, `detect-pdf`, and `dump_ops` commands. Treat PDF
-conversion as extraction with validation, not as proof that reading order or
-structure is correct.
+Use the installed Firecrawl `pdf-inspector` CLI for local PDF classification and
+native-text extraction. Treat conversion as extraction with validation: a
+successful command is not proof that reading order, tables, or encoding are
+correct.
 
-## Core workflow
+The installed build exposes `pdf2md` and `detect-pdf` through
+`/home/nova/.local/bin`. It has the default features only and does not perform
+OCR.
 
-### 1. Preserve source identity
-
-Download a remote PDF once to a scoped temporary path, then run every comparison
-against the same bytes. Record the final URL and checksum when provenance matters.
-Reject an HTML challenge page or error response before conversion.
-
-For cited research, prefer built-in web research over converted PDF text. Prefer a
-publisher's structured HTML or XML when it represents the same article; use the PDF
-when page-specific content is required.
-
-### 2. Classify before converting
-
-Request bounded JSON suitable for agent decisions:
-
-```bash
-pdf2md input.pdf --analyze --json > analysis.json
-jq '{pdf_type, page_count, pages_needing_ocr, ocr_reasons_by_page,
-     is_complex, pages_with_tables, pages_with_columns,
-     has_encoding_issues}' analysis.json
+```text
+PDF
+├── native/extractable ── detect-pdf ── pdf2md ── mechanical checks ── Markdown + review
+└── scanned/image-only ── OCR needed ── workflow decision ── OCRmyPDF/Tesseract
 ```
 
-Use `detect-pdf input.pdf --json` instead when only fast scanned-versus-text routing
-is needed and layout or encoding evidence cannot affect the decision.
+## Decision flow
 
-Interpret the result as follows:
+1. Preserve the source PDF. Never overwrite it. For a remote PDF, download it
+   once to a scoped temporary path and verify that the bytes are a PDF before
+   comparing or converting it.
+2. Classify before converting:
 
-| Result | Action |
-|---|---|
-| `text_based`, simple | Convert directly. |
-| `text_based`, complex | Convert, then inspect reading order, headings, and tables. |
-| `mixed` | Treat the Markdown as partial; identify and OCR the missing pages when the task requires complete text. |
-| `scanned` or `image_based` | Stop direct conversion and run an authorized OCR workflow first. |
-| `has_encoding_issues: true` | Treat extracted text as suspect and compare with another extractor or OCR. |
+   ```bash
+   detect-pdf "$input" --json > detect.json
+   jq '{pdf_type, page_count, pages_sampled, pages_with_text, confidence,
+        ocr_recommended, pages_needing_ocr, ocr_reasons_by_page}' detect.json
+   ```
 
-CLI page lists and `--select-pages` use one-based page numbers.
+   The fast JSON contract includes the fields above (some may be absent for a
+   particular document). `text_based` permits native extraction; `scanned` or
+   `image_based` requires an OCR decision; `mixed` may contain usable text plus
+   pages that need OCR. Classification is routing evidence, not a completeness
+   guarantee.
+3. Run layout analysis only when it can change the decision:
 
-Treat OCR and layout classifications as routing hints, not ground truth. Sparse pages,
-vertical text, charts, and publication furniture can cause false OCR, table, or column
-signals.
+   ```bash
+   detect-pdf "$input" --analyze --json > analysis.json
+   jq '{pdf_type, page_count, pages_needing_ocr, ocr_reasons_by_page,
+        is_complex, pages_with_tables, pages_with_columns}' analysis.json
+   ```
 
-### 3. Convert atomically
+   This is the dedicated analysis command. Its observed schema uses `is_complex`,
+   not `is_complex_layout`, and does not promise `has_encoding_issues`. The
+   `has_encoding_issues` field is available in `pdf2md --json` extraction metadata
+   when emitted by that command.
+4. Convert only when the result is appropriate for the task. For a mechanically
+   validated Markdown artifact, use the bundled helper:
 
-Use raw mode for a Markdown artifact because it emits only Markdown to stdout:
+   ```bash
+   /home/nova/.codex/skills/pdf-inspector/scripts/convert_pdf_to_markdown.sh \
+     "$input" "$output_md"
+   ```
 
-```bash
-pdf2md input.pdf --raw > output.md
-```
+   It classifies first, refuses scanned/image-only input and mixed input with
+   OCR-needed pages, writes beside the destination, requires successful nonempty
+   raw Markdown, and atomically moves the result. These are mechanical checks;
+   they do not establish reading order, table structure, or encoding quality. It
+   does not install software or run OCR. For a pipeline or a selected-page probe,
+   use raw stdout directly and perform the same checks:
 
-Do not accept an empty file merely because shell redirection created it. Convert to a
-temporary sibling, require exit status zero and nonempty content, then move it to the
-requested output path. `pdf2md --raw` exits with status 2 for a scanned or image-based
-PDF.
+   ```bash
+   tmp_md=$(mktemp)
+   if pdf2md "$input" --raw --select-pages 1 >"$tmp_md"; then
+     test -s "$tmp_md"
+   else
+     status=$?
+     rm -f -- "$tmp_md"
+     exit "$status"
+   fi
+   ```
 
-Use optional modes only when they answer the task:
+   The page selector is one-based and accepts values such as `1`, `1,3`, or
+   `5-10`. Useful opt-in modes are:
 
-```bash
-# Token-efficient cleanup
-pdf2md input.pdf --raw --compact > output.md
+   ```bash
+   pdf2md "$input" --raw > output.md                 # Markdown to stdout
+   pdf2md "$input" --raw --compact > compact.md      # compact Markdown
+   pdf2md "$input" --raw --pages > pages.md          # page markers
+   pdf2md "$input" --json > result.json              # metadata plus Markdown
+   pdf2md "$input" --items-json > items.json         # positioned text items
+   ```
 
-# Preserve page boundaries
-pdf2md input.pdf --raw --pages > output.md
+   The default-mode positional form `pdf2md input.pdf output.md` is supported,
+   but `--raw` always writes Markdown to stdout and ignores a positional output
+   path. Prefer the helper for final artifacts so failure cannot leave a
+   plausible empty/truncated destination.
 
-# Extract selected pages
-pdf2md input.pdf --raw --select-pages 1,3,5-10 > output.md
+## OCR boundary and failure semantics
 
-# Return metadata and Markdown together
-pdf2md input.pdf --json > result.json
+`pdf2md "$input" --raw` exits 2 and emits no Markdown when the input is scanned
+or image-only. Conversely, `pdf2md "$input" --json` can exit 0 while reporting
+`has_text: false` and `markdown_length: 0`. Never accept an empty Markdown file
+as a successful conversion, regardless of exit status.
 
-# Write Markdown through the CLI's output-file argument
-pdf2md input.pdf output.md
-```
+If OCR is authorized, preserve the original and create a separate searchable
+PDF with the existing OCRmyPDF/Tesseract/Poppler/Ghostscript workflow. Re-run
+`detect-pdf` and then `pdf2md` on that copy. Do not imply that `pdf-inspector`
+automatically routes to OCR, do not OCR in place, and do not add PDFium, ONNX
+Runtime, model files, or the optional Firecrawl OCR feature for this baseline.
+For mixed PDFs, use the reported pages and OCR reasons plus the task's required
+coverage before deciding whether to OCR selected pages or the whole copy. The
+bundled final-artifact helper exits 2 without publishing when `mixed` includes
+`pages_needing_ocr`; use direct `pdf2md --raw` only for an intentionally partial
+inspection, and label that output as partial rather than validated.
 
-Use `--password PW` only with authorization. It exposes the value in process
-arguments, so do not log or surface the command and do not store the password in the
-skill or output artifact.
+## Acceptance and escalation
 
-### 4. Validate the artifact
-
-Check the final file directly:
+For every delivered artifact, check the result rather than only the exit code:
 
 ```bash
 test -s output.md
-rg -n -m 40 '^#{1,6} |^\|' output.md
-rg -n -m 20 'expected title or section' output.md
+rg -n -m 40 '^#{1,6} |^\|' output.md || true
+rg -n -m 20 'expected title or section' output.md || true
 ```
 
-For complex, multi-column, table-heavy, legal, financial, or scientific PDFs:
-
-1. Compare a bounded selection with `pdftotext -layout` or MarkItDown.
-1. Inspect the title, first body transition, representative section boundaries,
-   tables, captions, references, and final page.
-1. Render and inspect only the decisive source pages when text comparison cannot
-   establish reading order.
-1. Report structural errors instead of silently cleaning content into a misleading
-   result.
-
-Prefer PDF Inspector for fast native-text PDF conversion. Use MarkItDown as a
-fallback when PDF Inspector splits titles, invents tables, or loses text. Do not feed
-both complete outputs into model context; compare bounded sections and mechanical
-summaries first.
-
-## OCR routing
-
-PDF Inspector performs no OCR. When complete conversion of a scanned or mixed PDF is
-authorized, preserve the original and create a separate searchable copy with the
-installed OCRmyPDF/Tesseract pipeline. Re-run `detect-pdf` and convert the searchable
-copy. Verify critical names, numbers, equations, and tables because OCR can introduce
-confident recognition errors.
-
-Do not OCR merely because one sparse page appears in `pages_needing_ocr`; inspect the
-reason and whether that page contains required visible text.
-
-## Diagnostic extraction
-
-Use positioned items when layout coordinates or font evidence can decide a question:
+Record the classification, selected pages, command/options, output path, and
+validation performed. For complex, multi-column, table-heavy, legal, financial,
+or scientific PDFs, compare bounded sections with the installed Poppler
+extractor before escalating:
 
 ```bash
-pdf2md input.pdf --items-json > items.json
-pdf2md input.pdf --items-json --select-pages 2-3 > items.json
-jq '{total_items, underlined_count, items: .items[:20]}' items.json
+pdftotext -layout "$input" - | sed -n '1,160p'
 ```
 
-Use `dump_ops input.pdf [page] [search]` only for low-level parser debugging. Its
-unfiltered output can be large; specify one page and a search term when possible,
-capture complete output outside model context, and surface only the relevant PDF
-operators and errors.
+Use `--items-json` when coordinates or font evidence matter. If low-level parser
+evidence is needed, resolve the unpromoted sibling binary from the currently
+selected installation instead of assuming `dump_ops` is on `PATH`:
 
-This CLI build does not implement conventional `--help` or `--version` flags; those
-tokens are interpreted as PDF paths. Invoke a command with no arguments for its usage
-text. Check Cargo installation metadata only when the exact installed version matters.
+```bash
+pdf2md_real=$(readlink -f "$(command -v pdf2md)")
+dump_ops="$(dirname "$pdf2md_real")/dump_ops"
+test -x "$dump_ops"
+"$dump_ops" "$input" 1
+```
 
-## Known failure patterns
+The current host does not provide `markitdown`; do not assume or install it just
+for comparison. If a future host has it, probe with `command -v markitdown` and
+use it only as a bounded secondary comparator. Do not feed two full-document
+conversions into model context. Report interleaved columns, false tables,
+garbled text, missing pages, or other structural uncertainty instead of silently
+repairing it.
 
-- Multi-column prose may be interleaved even when column detection succeeds.
-- Charts, figure panels, author lists, and aligned page furniture may become false
-  Markdown tables.
-- A title can be split between a heading and a detached fragment.
-- Headers, footers, DOI strings, download notices, and vertical text may remain or be
-  reversed.
-- Successful extraction and high token overlap do not establish correct reading order.
-- Scanned and image-only PDFs require a separate OCR step.
+This CLI does not implement conventional `--help` or `--version`: those tokens
+are treated as PDF paths. Invoking either command with no arguments prints usage
+and exits nonzero; do not use `--help` as an installation health check.
+
+If the user's objective is authoritative research or citation rather than PDF
+conversion, a publisher's equivalent structured HTML/XML can be preferable. An
+explicit request to convert or inspect the supplied PDF remains a local PDF
+workflow.
 
 ## Handoff
 
-Report the source file or URL, checksum when relevant, selected command and options,
-PDF classification, pages requiring review or OCR, output path, validation performed,
-and any known reading-order or structure defects. Distinguish tool output from verified
-document meaning.
+State the source, classification, pages needing review/OCR, chosen command and
+options, output path, validation evidence, and known reading-order or structure
+limits. Distinguish extracted text from verified document meaning.

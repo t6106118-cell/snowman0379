@@ -1,4 +1,7 @@
 interface:
   display_name: "PDF Inspector"
-  short_description: "Classify and convert PDFs to structured Markdown"
-  default_prompt: "Use $pdf-inspector to classify this PDF and convert it to validated Markdown."
+  short_description: "Classify PDFs and validate Markdown extraction"
+  default_prompt: "Use $pdf-inspector to classify a PDF and produce mechanically validated Markdown."
+
+policy:
+  allow_implicit_invocation: true
