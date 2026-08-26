@@ -1,4 +1,0 @@
-interface:
-  display_name: "Luna-First Orchestration"
-  short_description: "Luna evidence, Sol decisions and execution"
-  default_prompt: "Use $orchestrate to decompose independent evidence work across explicitly pinned Luna/max agents, execute mutations with explicitly pinned Sol/high, and behavior-verify the result."
