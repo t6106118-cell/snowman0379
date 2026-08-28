@@ -1,0 +1,19 @@
+{
+  "selected": "github",
+  "finders": [
+    {
+      "id": "github",
+      "name": "GitHub Agent Finder",
+      "description": "GitHub's public catalog of installable MCP servers, skills, and tools.",
+      "search": "https://agentfinder.github.com/api/v1/search",
+      "mcp": "https://agentfinder.github.com/api/v1/mcp"
+    },
+    {
+      "id": "huggingface",
+      "name": "Hugging Face Discover",
+      "description": "Hugging Face's discovery service for agentic resources.",
+      "search": "https://huggingface-hf-discover.hf.space/search",
+      "mcp": "https://huggingface-hf-discover.hf.space/mcp"
+    }
+  ]
+}
