@@ -1,350 +1,219 @@
-# scc Detailed Command Guide
+# scc 4.0.0 command guide
 
-Use this reference when the task needs exact install commands, less-common flags, machine-readable output, or judgment about whether `scc` is the right tool.
+This reference describes the released scc 4.0.0 command surface exercised for
+this package. Start with `scc --help` and `scc --version` on the live machine:
+packaged binaries may be older or newer. These commands measure a working tree
+or Git history; they do not prove correctness, runtime performance, or security.
 
-Source basis:
-- Local command help: `scc --help`
-- Local version tested: `scc version 3.7.0`
-- Upstream project: <https://github.com/boyter/scc>
-- Practice guide source: `/root/bk3/continuous-note-taking/research/scc-command-guide-and-practice.md`
+## Choose the analysis
 
-## What scc Does
-
-`scc` means Sloc, Cloc and Code.
-
-It reports:
-- Files by language.
-- Total lines, blank lines, comment lines, code lines.
-- Bytes processed.
-- Estimated complexity.
-- Unique lines of code and DRYness with `--dryness` or `--uloc`.
-- Generated/minified file handling.
-- Many output formats for automation and reports.
-
-It does not search inside files. Use `rg` for content search.
-
-## Install And Verify
-
-Always verify before installing:
+Set a quoted path before running examples:
 
 ```bash
-command -v scc
-scc --version
+repo=/path/to/repository
 ```
 
-Expected version format:
-
-```text
-scc version 3.7.0
-```
-
-### Fedora/RHEL Family
-
-Try the package manager first if `scc` is packaged or a COPR repo is already enabled:
-
-```bash
-dnf install -y scc
-```
-
-If the normal repo does not provide `scc`, use the GitHub prebuilt release workflow below.
-
-### GitHub Prebuilt Binary Fallback
-
-Use the upstream release page:
-
-```text
-https://github.com/boyter/scc/releases
-```
-
-Generic workflow:
-
-```bash
-tmpdir="$(mktemp -d)"
-cd "$tmpdir"
-curl -fLO "RELEASE_ASSET_URL_FOR_THIS_OS_AND_ARCH"
-tar -xzf "DOWNLOADED_ARCHIVE.tar.gz"
-install -m 0755 scc /usr/local/bin/scc
-scc --version
-```
-
-Pick the release asset matching the host OS and architecture, for example Linux x86_64/amd64 on this environment.
-
-If the archive format is `.zip`, use:
-
-```bash
-unzip DOWNLOADED_ARCHIVE.zip
-install -m 0755 scc /usr/local/bin/scc
-```
-
-### Other Common Install Paths
-
-Use only when appropriate for the host:
-
-```bash
-# Go toolchain
-go install github.com/boyter/scc/v3@latest
-
-# macOS Homebrew, if available
-brew install scc
-
-# Arch, if available
-pacman -S scc
-```
-
-After install, record what was installed and from where.
-
-## Best Defaults
-
-Use this as the normal first command:
-
-```bash
-scc --no-cocomo PATH
-```
-
-Why:
-- Keeps output focused on code metrics.
-- Avoids rough cost/schedule/people estimates that usually do not help Codex tasks.
-- Gives language/file/line/code/comment/complexity summary quickly.
-
-Use ASCII output when terminal rendering matters:
-
-```bash
-scc --ci --no-cocomo PATH
-```
-
-Use faster counting on large repos when complexity is not needed:
-
-```bash
-scc --no-complexity --no-cocomo PATH
-```
-
-## Core Commands
-
-| Task | Command |
+| Question | Command |
 |---|---|
-| Quick repo summary | `scc --no-cocomo PATH` |
-| Wide table | `scc --wide --no-cocomo PATH` |
-| ASCII table | `scc --ci --no-cocomo PATH` |
-| Per-file table | `scc --by-file --no-cocomo PATH` |
-| Sort by files | `scc --sort files --no-cocomo PATH` |
-| Sort by language name | `scc --sort name --no-cocomo PATH` |
-| Sort by lines | `scc --sort lines --no-cocomo PATH` |
-| Sort by blanks | `scc --sort blanks --no-cocomo PATH` |
-| Sort by code | `scc --sort code --no-cocomo PATH` |
-| Sort by comments | `scc --sort comments --no-cocomo PATH` |
-| Sort by complexity | `scc --by-file --sort complexity --no-cocomo PATH` |
-| Disable complexity | `scc --no-complexity --no-cocomo PATH` |
-| Disable duplicate-file ignore | `scc --no-duplicates --no-cocomo PATH` |
-| Show percentages | `scc --percent --no-cocomo PATH` |
-| List languages | `scc --languages` |
+| Language composition and line counts | `scc --no-cocomo "$repo"` |
+| Fast count without complexity calculation | `scc --no-complexity --no-cocomo "$repo"` |
+| Per-file rows | `scc --format json --by-file --no-cocomo "$repo"` |
+| Largest files | per-file JSON, then sort by `.Lines` or `.Code` with `jq` |
+| Cyclomatic/structural complexity | per-file JSON, sort by `.Complexity` with `jq` |
+| Cognitive complexity | add `--cognitive`; inspect `.Cognitive` in the same JSON rows |
+| ULOC/DRYness signal | `scc --dryness --no-cocomo "$repo"` (or `--uloc`) |
+| LLM regeneration-cost estimate | `scc --locomo --no-cocomo "$repo"` |
+| COCOMO plus LOCOMO | `scc --cost-comparison "$repo"` |
+| Files with high complexity and churn | `scc --hotspots --depth 100 "$repo"` |
+| Repository-wide temporal coupling | `scc --coupling --depth 100 "$repo"` |
+| Blast radius of one file | `scc --coupling-for path/to/file.go --depth 100 "$repo"` |
+| Author ownership rollup | `scc --by-author --depth 100 "$repo"` |
+| Language or author activity over time | `scc --timeline --depth 100 "$repo"` (add `--by-author` for author timeline) |
 
-## Include, Exclude, And Matching
+The Git reports are mutually exclusive. They need a path inside a Git
+repository and walk history in-process; they do not invoke the `git` executable.
+Use `--depth N` to bound work (`0` means the entire history). A short or shallow
+history can legitimately produce empty hotspots/coupling rows.
 
-| Task | Command |
-|---|---|
-| Include extensions | `scc --include-ext go,rs,py --no-cocomo PATH` |
-| Exclude extensions | `scc --exclude-ext md,csv --no-cocomo PATH` |
-| Exclude files | `scc --exclude-file package-lock.json --no-cocomo PATH` |
-| Exclude dirs | `scc --exclude-dir vendor,node_modules --no-cocomo PATH` |
-| Exclude path regex | `scc --not-match '(_test\\.go|vendor/)' --no-cocomo PATH` |
-| Count unknown ext as a language | `scc --count-as foo:Go --no-cocomo PATH` |
-| Count ignored files | `scc --count-ignore --no-cocomo PATH` |
+Do not pass working-tree-only flags such as `--no-cocomo` to history reports;
+the released binary rejects that combination. The history reports use their
+own JSON envelopes and window metadata.
 
-Ignore controls:
+## Structured output
+
+Prefer JSON whenever Codex needs exact paths or further filtering:
 
 ```bash
-scc --no-gitignore --no-cocomo PATH
-scc --no-ignore --no-cocomo PATH
-scc --no-scc-ignore --no-cocomo PATH
+scc --format json --by-file --no-cocomo "$repo" > counts.json
+jq '[.[].Files[]] | sort_by(-.Complexity)[:20] |
+    map({location: .Location, language: .Language, lines: .Lines,
+         code: .Code, complexity: .Complexity})' counts.json
 ```
 
-Use these only when intentionally auditing ignored files.
+Without `--by-file`, `--format json` is an array of per-language objects. The
+observed v4 fields include `Name`, `Bytes`, `Lines`, `Code`, `Comment`, `Blank`,
+`Complexity`, `Count`, `WeightedComplexity`, `Files`, `LineLength`, and `ULOC`.
+With `--by-file`, each language object's `Files` array contains rows including
+`Location`, `Filename`, `Language`, `Lines`, `Code`, `Comment`, `Blank`,
+`Complexity`, `WeightedComplexity`, `Generated`, `Minified`, and `Uloc`.
+Treat additional fields as versioned output, not a reason to parse terminal
+tables.
 
-## Generated, Minified, And Large Files
+Add `--cognitive` to include `Cognitive` at language and file level. Add
+`--percent` to include `CodePercent`, `CommentPercent`, `BlankPercent`,
+`LinePercent`, `ComplexityPercent`, `BytePercent`, and `FilePercent`. Percentages
+are relative to the current scan and policy; they are not quality scores.
 
-| Task | Command |
-|---|---|
-| Include generated files | `scc --gen --no-cocomo PATH` |
-| Exclude generated files | `scc --no-gen --no-cocomo PATH` |
-| Print generated markers | `scc --generated-markers` |
-| Include minified files | `scc --min --no-cocomo PATH` |
-| Exclude minified files | `scc --no-min --no-cocomo PATH` |
-| Exclude minified generated files | `scc --no-min-gen --no-cocomo PATH` |
-| Include large files | `scc --no-large --no-cocomo PATH` |
-| Set large-byte threshold | `scc --large-byte-count 2000000 --no-cocomo PATH` |
-| Set large-line threshold | `scc --large-line-count 50000 --no-cocomo PATH` |
-
-Before comparing metrics across runs, keep generated/minified/large-file policy the same.
-
-## Output Formats
-
-Use `--format FORMAT`.
-
-| Format | Use |
-|---|---|
-| `tabular` | Human terminal summary. |
-| `wide` | Wider terminal summary. |
-| `json` | Best general automation format. |
-| `json2` | Alternate schema with `languageSummary` and estimates. |
-| `csv` | Spreadsheets, `qsv`, `mlr`, simple reports. |
-| `csv-stream` | Streaming CSV pipelines. |
-| `html` | Standalone HTML report. |
-| `html-table` | Embeddable HTML table. |
-| `sql` | SQL output. |
-| `sql-insert` | SQL insert statements. |
-| `openmetrics` | Prometheus/OpenMetrics scraping. |
-| `cloc-yaml` | Compatibility. |
-| `sloccount-format` | Compatibility. |
-
-Examples:
+Other stable machine-oriented formats include `csv`, `csv-stream`, `json2`,
+`openmetrics`, `sql`, `sql-insert`, and `cloc-yaml`. Use `--format-multi` only
+when explicit command-line output paths are wanted, for example:
 
 ```bash
-scc --format json --no-cocomo PATH > scc-report.json
-scc --format csv --no-cocomo PATH > scc-report.csv
-scc --format openmetrics --no-cocomo PATH > scc.prom
+scc --format-multi 'tabular:stdout,json:counts.json,csv:counts.csv' \
+  --no-cocomo "$repo"
 ```
 
-Write several formats at once:
+## Scope and exclusion policy
+
+Keep scope explicit and consistent when comparing runs:
 
 ```bash
-scc --format-multi 'tabular:stdout,json:report.json,csv:report.csv' --no-cocomo PATH
+scc --include-ext go,rs,py --no-cocomo "$repo"
+scc --exclude-ext md,csv --no-cocomo "$repo"
+scc --exclude-dir vendor,node_modules --no-cocomo "$repo"
+scc --exclude-file package-lock.json --no-cocomo "$repo"
+scc --not-match '(_test\.go|vendor/)' --no-cocomo "$repo"
 ```
 
-## JSON Patterns
+Generated, minified, duplicate, and large-file policies affect totals. Make
+them explicit with `--gen`/`--no-gen`, `--min`/`--no-min`, `--no-duplicates`,
+`--no-large`, and the corresponding size thresholds when an audit requires it.
+Use `--count-ignore` only when the ignore files themselves should be counted.
 
-Top languages by code:
+An additional ignore file uses gitignore syntax and is anchored at the scan
+root:
 
 ```bash
-scc --format json --no-cocomo PATH \
-  | jq 'sort_by(-.Code) | .[:10] | map({Name, Files, Lines, Code, Comments, Complexity})'
+scc --ignore-file "$repo/team.ignore" --ignore-file "$repo/personal.ignore" \
+  --no-cocomo "$repo"
 ```
 
-Highest complexity files:
+The flag is repeatable; later supplied files can re-include an earlier match.
+In-tree `.gitignore`, `.ignore`, and `.sccignore` rules take precedence over
+supplied files. `--no-gitignore`, `--no-ignore`, and `--no-scc-ignore` disable
+those respective in-tree rule sources when intentionally auditing ignored
+content.
+
+## Configuration
+
+Configuration files are option lists (one flag per line; comments and quoted
+values are supported). They cannot inject positional count paths. Precedence is
+global source < project source < command line:
+
+- There is no implicit global file. Set `SCC_CONFIG_PATH` or pass
+  `--config PATH`; `--config` overrides the environment value.
+- By default the project file is `./.sccconfig` relative to the current working
+  directory. Path arguments do not change that anchor.
+- `--find-root-config` walks upward to the Git/Hg root to find the project file.
+- `--no-config` disables automatic global/project discovery. An explicit
+  `--config PATH` is still honored and is the sole config source in that mode.
+- Config can select formats and analysis flags but cannot make scc write files;
+  `--output`, `--report`, and `--format-multi` file destinations are honored
+  only when supplied on the command line.
+
+Example:
 
 ```bash
-scc --format json --by-file --no-cocomo PATH \
-  | jq '[.[].Files[]] | sort_by(-.Complexity)[:20] | map({Location, Lines, Code, Comment, Complexity})'
+printf '%s\n' '--no-cocomo' '--exclude-dir vendor' > "$repo/team.sccconfig"
+(cd "$repo" && scc --config team.sccconfig .)
 ```
 
-Specific extension and exact file paths:
+For a user-global option list, use an explicit path and keep it reviewable:
 
 ```bash
-scc --format json --by-file --include-ext go --no-cocomo PATH \
-  | jq '.[0].Files | sort_by(-.Code)[:20] | map({Location, Code, Complexity})'
+export SCC_CONFIG_PATH="$HOME/.config/scc/global.sccconfig"
+scc --format json "$repo"
 ```
 
-## CSV Patterns
+Do not assume a project config in a parent directory is read unless
+`--find-root-config` is present. Keep file-writing flags on the command line.
 
-Write a CSV report:
+## ULOC, complexity, and LOCOMO
+
+`--dryness` implies `--uloc` and reports unique lines plus a DRYness percentage.
+Use it to find duplication/uniqueness signals, then inspect the code; a low or
+high value is not a design verdict.
+
+Cyclomatic complexity is a rough structural triage measure. `--cognitive`
+adds a nesting-weighted signal. Both depend on language parsers and scan policy.
+
+LOCOMO (`--locomo`) estimates the cost to regenerate known code with an LLM;
+`--cost-comparison` shows it beside COCOMO. LOCOMO is an experimental heuristic,
+not an industry-standard quality or project-cost forecast. Presets are
+`large`, `medium`, `small`, and `local`; override pricing or review assumptions
+only when the resulting assumptions are recorded.
+
+## Git insight reports
+
+The JSON envelopes observed in v4 include a `report` name and a `window` with
+`depth`, commit count, and date range. The report-specific payloads are:
+
+- `--hotspots`: `files` rows with `file`, `language`, `complexity`, `commits`,
+  `linesChanged`, `authors`, `codeChurn`, `commentChurn`, and normalized `score`.
+  The score identifies high complexity × churn candidates, not defect
+  probability.
+- `--coupling`: `pairs` with `fileA`, `fileB`, `shared`, `commitsA`, `commitsB`,
+  and `degree`; pairs need repeated shared history to appear.
+- `--coupling-for FILE`: `target`, `targetCommits`, and `partners` with shared
+  commits and conditional/reverse coupling values. This is a historical blast
+  radius signal, not a dependency graph.
+- `--by-author`: `busFactor` and `authors` ownership/last-touch fields.
+- `--timeline`: language activity series; adding `--by-author` changes it to an
+  author timeline.
+
+History is evidence about the selected window. It can be incomplete in shallow
+clones, distorted by mass rewrites, or unrepresentative of current ownership.
+
+## HTML reports
+
+Use an explicit destination in automation:
 
 ```bash
-scc --format csv --no-cocomo PATH > scc-report.csv
+scc --report="$repo/scc-report.html" --report-title "repository" \
+  --report-skip cocomo "$repo"
 ```
 
-Expected header:
+The report is a self-contained HTML document. Bare `--report` defaults to
+`scc-report.html` and prompts before overwriting; explicit `--report=PATH` is
+deterministic. `--report-skip` accepts comma-separated sections such as
+`cocomo`, `locomo`, `hotspots`, `coupling`, `authors`, `timeline`, `files`,
+`uloc`, `linelength`, and `card`.
 
-```text
-Language,Lines,Code,Comments,Blanks,Complexity,Bytes,Files,ULOC
-```
+## Optional MCP stdio
 
-Use CSV when the next tool is `qsv`, `mlr`, a spreadsheet, or a persistent report.
-
-## ULOC And DRYness
-
-Use:
+Use MCP only when a process-local structured tool surface materially improves
+an agent workflow over direct shell calls. Start it as a child process:
 
 ```bash
-scc --dryness --no-cocomo PATH
+scc --mcp
 ```
 
-or:
+It speaks newline-delimited JSON-RPC over stdin/stdout. Initialize first, then
+call `tools/list`; the v4.0.0 binary exposes `analyze`, `hotspots`, and
+`coupling`. The `analyze` tool accepts fields such as `path`, `by_file`,
+`cognitive`, `locomo`, `include_ext`, `exclude_ext`, `no_duplicates`, `no_min_gen`,
+`sort`, and `limit`. The `hotspots` tool accepts `path`, `depth`, and `limit`;
+`coupling` accepts `path`, `depth`, `limit`, and an optional `file` for a
+per-file blast-radius view.
 
-```bash
-scc --uloc --no-cocomo PATH
-```
+Inspect each returned schema rather than guessing argument names. MCP does not
+change the no-install boundary: do not add this process to
+`~/.codex/config.toml`, and do not leave a background server running merely
+because the binary supports stdio mode.
 
-Interpretation:
-- ULOC means unique lines of code.
-- DRYness is a duplication signal.
-- Low DRYness is a reason to inspect, not proof that the repo is poorly designed.
+## Boundaries and follow-up
 
-## Real Practice Results
-
-Small mixed fixture:
-
-```bash
-scc --no-cocomo continuous-note-taking/data/srgn-practice
-```
-
-Observed:
-
-| Language | Files | Lines | Code | Comments | Complexity |
-|---|---:|---:|---:|---:|---:|
-| Python | 1 | 25 | 14 | 3 | 0 |
-| Go | 1 | 17 | 13 | 0 | 0 |
-| Rust | 1 | 15 | 12 | 0 | 0 |
-| Scheme | 1 | 5 | 5 | 0 | 0 |
-| Plain Text | 1 | 3 | 3 | 0 | 0 |
-
-`awesome-cli-apps-in-a-csv`:
-
-```bash
-scc --no-cocomo awesome-cli-apps-in-a-csv
-```
-
-Observed:
-
-| Language | Files | Lines | Code | Complexity |
-|---|---:|---:|---:|---:|
-| Markdown | 3 | 2816 | 2503 | 0 |
-| CSV | 5 | 2366 | 2366 | 0 |
-| Python | 1 | 122 | 93 | 29 |
-
-This told us the repo is mostly docs/data with one Python script to inspect.
-
-`xray-core` Go-only pass:
-
-```bash
-scc --no-cocomo --include-ext go xray-core
-```
-
-Observed:
-
-| Language | Files | Lines | Code | Comments | Complexity |
-|---|---:|---:|---:|---:|---:|
-| Go | 889 | 143602 | 121108 | 5427 | 22716 |
-
-Highest rough complexity files:
-
-| File | Lines | Code | Complexity |
-|---|---:|---:|---:|
-| `xray-core/infra/conf/transport_internet.go` | 2317 | 2105 | 634 |
-| `xray-core/common/geodata/ip_matcher.go` | 1023 | 887 | 316 |
-| `xray-core/proxy/freedom/freedom.go` | 826 | 744 | 252 |
-| `xray-core/proxy/proxy.go` | 809 | 709 | 240 |
-| `xray-core/proxy/vless/inbound/inbound.go` | 700 | 601 | 236 |
-
-## Decision Guide
-
-| Task | Best Tool |
-|---|---|
-| Find text or symbols by text | `rg` |
-| Find file paths by name/type | `fd` or `find` |
-| Count repo size by language | `scc` |
-| Rank files by code lines | `scc --by-file --sort code` |
-| Rank files by rough complexity | `scc --by-file --sort complexity` |
-| Structural code search/rewrite | `ast-grep` |
-| Static rule scanning | `semgrep` |
-| Exact code behavior/root cause | Read code, run tests, use language tools |
-
-Rating for Codex automation: 8/10.
-
-Use `scc` early for repo triage. Do not use it as proof of correctness, bug location, or refactor necessity.
-
-## Common Mistakes
-
-- Do not use `scc` when the task is to find text. Use `rg`.
-- Do not trust terminal table paths for exact file names. Use JSON/CSV.
-- Do not compare two reports unless generated/minified/ignore policies match.
-- Do not leave COCOMO estimates in notes unless the user asked for them.
-- Do not treat complexity or DRYness as a final diagnosis.
+Use the metrics to choose what to read or test next. Use `rg`, `fd`/`find`,
+`git`, AST tools, linters, tests, and profilers for the questions they answer
+better. Preserve the scan path, release, flags, ignore rules, and history depth
+when recording or comparing results.

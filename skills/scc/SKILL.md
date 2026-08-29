@@ -1,95 +1,65 @@
 ---
 name: scc
-description: Codebase measurement and source line counting with scc. Use when Codex needs to install or verify scc, triage an unfamiliar repository, count files/lines/code/comments/blanks by language, rank files by size or estimated complexity, inspect generated/minified/ignored-file counting behavior, compute ULOC/DRYness duplication signals, export code metrics as JSON/CSV/HTML/SQL/OpenMetrics, or decide whether scc is better than rg/fd/find/tokei/cloc for a codebase metrics task.
+description: Repository measurement and Git-history signals with scc. Use when Codex needs language/LOC composition, per-file size or complexity triage, ULOC/DRYness or LOCOMO signals, machine-readable metrics, HTML reports, hotspots, coupling, or author/timeline history from an installed scc 4.x binary.
 ---
 
 # scc
 
-## Core Workflow
+Use `scc` for repository structure and history measurement. It is not a
+replacement for `rg` (content search), `fd`/`find` (path discovery), `git`
+(ordinary version-control operations), profilers (runtime performance), or
+linters/static analyzers (correctness and style).
 
-Use `scc` for repository measurement, not text search.
+## Before running
 
-Default to:
-
-```bash
-scc --no-cocomo PATH
-```
-
-Use `rg` for content search, `fd`/`find` for path discovery, and `scc` for language mix, LOC, code/comment/blank counts, rough complexity, ULOC/DRYness, and machine-readable metrics.
-
-## Install Or Verify
-
-First verify:
+Verify the executable and release before selecting version-specific flags:
 
 ```bash
 command -v scc
 scc --version
+scc --help
 ```
 
-If missing, prefer the best available install path for the host:
+This package is validated against scc 4.0.0. If `scc` is absent or an older
+release lacks a needed flag, report that rather than silently installing a
+binary. This skill does not install scc or register an MCP server.
 
-```bash
-# Fedora/RHEL family, when packaged or COPR is configured
-dnf install -y scc
+Set `repo=/path/to/repository` and choose the narrowest route that answers the
+question:
 
-# GitHub prebuilt fallback
-curl -fsSL https://api.github.com/repos/boyter/scc/releases/latest
-```
-
-For detailed install choices, release-binary workflow, and verification commands, read [references/command-guide.md](references/command-guide.md).
-
-## Fast Command Selection
-
-| Need | Command |
+| Repository question | v4 route |
 |---|---|
-| Repo summary | `scc --no-cocomo PATH` |
-| ASCII-safe output | `scc --ci --no-cocomo PATH` |
-| Per-file rows | `scc --by-file --no-cocomo PATH` |
-| Largest code areas | `scc --sort code --no-cocomo PATH` |
-| Highest rough complexity files | `scc --by-file --sort complexity --no-cocomo PATH` |
-| Faster large-repo first pass | `scc --no-complexity --no-cocomo PATH` |
-| Only some extensions | `scc --include-ext go,rs,py --no-cocomo PATH` |
-| Exclude extensions | `scc --exclude-ext md,csv --no-cocomo PATH` |
-| Exclude directories | `scc --exclude-dir vendor,node_modules --no-cocomo PATH` |
-| JSON for `jq` | `scc --format json --no-cocomo PATH` |
-| CSV for tabular tools | `scc --format csv --no-cocomo PATH` |
-| Duplicate/unique line signal | `scc --dryness --no-cocomo PATH` |
-| Multiple reports | `scc --format-multi 'tabular:stdout,json:report.json,csv:report.csv' --no-cocomo PATH` |
+| Language mix, files, lines, code/comments/blanks | `scc --no-cocomo "$repo"` |
+| Fast size pass without complexity | `scc --no-complexity --no-cocomo "$repo"` |
+| Exact file rows or largest/most complex files | `scc --format json --by-file --no-cocomo "$repo"`, then filter JSON with `jq` |
+| Cyclomatic/structural complexity | `scc --format json --by-file --no-cocomo "$repo"` |
+| Nesting-weighted cognitive complexity | add `--cognitive` |
+| Duplication/uniqueness signal | `scc --dryness --no-cocomo "$repo"` or `--uloc` |
+| LLM regeneration-cost signal | `scc --locomo --no-cocomo "$repo"`; use `--cost-comparison` only when both estimates are wanted |
+| Historical ownership/activity | from a Git repository root, `--by-author` and/or `--timeline` |
+| Frequently changed, complex files | `--hotspots` (bound history with `--depth N`) |
+| Files that change together / likely blast radius | `--coupling` or `--coupling-for FILE` |
+| Additional exclusion rules | repeat `--ignore-file FILE` |
+| Agent/tool integration | optional `scc --mcp` stdio only when direct CLI output is insufficient |
 
-## Automation Patterns
+For Codex processing, prefer `--format json`; add `--percent` for percentage
+fields. Use `--format csv` for tabular pipelines and an explicit
+`--report=PATH.html` for a shareable HTML report. Read
+[references/command-guide.md](references/command-guide.md) for v4 schemas,
+history/configuration/ignore details, MCP messages, and worked command forms.
 
-Use JSON when exact paths or later filtering matter:
+## Interpret results in context
 
-```bash
-scc --format json --by-file --no-cocomo PATH \
-  | jq '.[].Files | sort_by(-.Complexity)[:10]'
-```
+- Complexity, cognitive complexity, ULOC/DRYness, LOCOMO, hotspots, and
+  coupling are evidence or triage signals; none alone proves a defect, poor
+  design, quality score, ownership risk, or required refactor.
+- Git reports depend on repository history and can be much slower than a
+  working-tree count. Use `--depth` deliberately and say what window was used.
+- Keep generated/minified/large-file and ignore policies consistent before
+  comparing runs.
+- Use exact paths from JSON/CSV rather than parsing human tables; investigate
+  flagged files with normal code reading, tests, `rg`, and language tooling.
 
-Use CSV when handing results to `qsv`, `mlr`, spreadsheets, or reports:
-
-```bash
-scc --format csv --no-cocomo PATH > scc-report.csv
-```
-
-Use `--no-cocomo` unless the user explicitly wants cost/schedule/people estimates.
-
-Use `--no-complexity` for a faster first pass when complexity is not needed.
-
-## Interpretation Rules
-
-- Treat complexity as a rough triage signal, not proof of risk or bad code.
-- Treat `--dryness`/ULOC as a duplication smell, not a design verdict.
-- Use JSON/CSV instead of terminal tables when exact paths matter because terminal paths can be truncated.
-- Check ignore/generated/minified flags when metrics must be auditable.
-- After `scc` identifies target areas, inspect files normally with `rg`, code reading, tests, language tools, or AST/static-analysis tools.
-
-## Detailed Reference
-
-Read [references/command-guide.md](references/command-guide.md) when a task needs:
-
-- Installation from GitHub release binaries.
-- Full command examples and output formats.
-- Include/exclude, ignore, generated, minified, and remap behavior.
-- JSON/CSV/OpenMetrics/SQL export details.
-- Practical examples from real repos.
-- Comparison against `rg`, `fd`, `find`, `tokei`, and `cloc`.
+MCP is an optional process-local stdio surface. If used, initialize it and
+inspect `tools/list` before calling a tool; do not add it to Codex
+configuration merely because the binary supports it.
