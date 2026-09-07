@@ -1,4 +1,4 @@
 interface:
   display_name: "Fetch URL as Markdown"
-  short_description: "Fetch URLs as clean local-first Markdown"
+  short_description: "Fetch URLs as Markdown or document handoffs"
   default_prompt: "Use $fetch-url-markdown to fetch this URL as a clean Markdown artifact."
