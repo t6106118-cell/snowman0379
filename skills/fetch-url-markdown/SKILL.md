@@ -49,6 +49,9 @@ The helper also enforces timeouts, refuses accidental overwrite, restricts curl 
 
 ## Dependencies
 
+For provisioning, rebuilding, or upgrading the Firecrawl adapter commands,
+see [RUNTIME.md](RUNTIME.md).
+
 - Core: Python 3 and curl.
 - HTML: `firecrawl-html-to-markdown`.
 - Browser: a Chromium-compatible browser, then Firecrawl.
