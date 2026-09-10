@@ -161,3 +161,7 @@ workflow.
 State the source, classification, pages needing review/OCR, chosen command and
 options, output path, validation evidence, and known reading-order or structure
 limits. Distinguish extracted text from verified document meaning.
+
+## Runtime maintenance
+
+For provisioning, verification, or upgrades, see [RUNTIME.md](RUNTIME.md).

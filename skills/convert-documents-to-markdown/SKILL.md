@@ -24,3 +24,7 @@ Rules:
 4. For a large document, write to a file with `-o` and read the parts you need instead of streaming everything into context.
 5. Scanned and image-only PDFs need OCR, which anydoc does not do; they fail as unsupported. For scanned, image-only, mixed, or otherwise serious PDF work, prefer the dedicated pdf-inspector skill with the local `detect-pdf`/`pdf2md` and OCRmyPDF/Tesseract/Poppler/Ghostscript workflow.
 6. Inside a Node, Python, or Rust codebase, prefer the library over shelling out: `@firecrawl/anydoc` on npm, `firecrawl-anydoc` on PyPI, `anydoc` on crates.io. Each exposes the same `to_markdown` / `toMarkdown` API.
+
+## Runtime maintenance
+
+For provisioning, verification, or upgrades, see [RUNTIME.md](RUNTIME.md).

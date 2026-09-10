@@ -63,3 +63,7 @@ history/configuration/ignore details, MCP messages, and worked command forms.
 MCP is an optional process-local stdio surface. If used, initialize it and
 inspect `tools/list` before calling a tool; do not add it to Codex
 configuration merely because the binary supports it.
+
+## Runtime maintenance
+
+For provisioning, verification, or upgrades, see [RUNTIME.md](RUNTIME.md).
