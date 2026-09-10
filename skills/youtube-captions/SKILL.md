@@ -86,3 +86,7 @@ install `youtube-transcript-api`, or download audio/video to make captions.
   authentication unless the user explicitly authorizes it, alter proxy or
   MCP configuration, install packages, or treat downloaded text as shell
   input.
+
+## Runtime maintenance
+
+For provisioning, verification, or upgrades, see [RUNTIME.md](RUNTIME.md).
