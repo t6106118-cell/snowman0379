@@ -16,7 +16,7 @@ Download the requested media with the installed `yt-dlp`. Keep this workflow lim
 ## Probe the live path
 
 - Check `command -v yt-dlp ffmpeg ffprobe` and the current versions. On this Fedora workstation, use the tool inventory at `/home/nova/a1/FEDORA44_WORKSTATION_TOOL_INVENTORY.md` to locate installed commands; verify them live. Invoke normal `yt-dlp` so its user configuration and Deno/EJS support remain available.
-- YouTube access on this workstation needs the local SOCKS listener. Verify `127.0.0.1:10808` is listening, then pass `--proxy 'socks5h://127.0.0.1:10808'` explicitly to `yt-dlp`. Do not infer that inherited proxy variables are absent or present without checking. Do not start Xray or change proxy configuration as a side effect.
+- Check the proxy environment and listener at `127.0.0.1:10808`. In configured Ptyxis shells, `HTTP_PROXY`/`HTTPS_PROXY` point to `http://127.0.0.1:10808`, and normal `yt-dlp` uses them; a metadata probe succeeded without `--proxy`. Use an explicit proxy option only if the inherited path is absent or fails and the alternative is verified. Xray is started manually before Codex; do not start it or change proxy settings as a side effect.
 - Probe metadata and formats without downloading. `yt-dlp --dump-single-json --skip-download --no-playlist ... "$URL"` supplies format IDs, codecs, dimensions, `filesize`, and `filesize_approx`. Its raw JSON can contain signed media URLs: parse it in memory or in a mode-0600 temporary file and print only the fields needed for a choice. Do not paste raw JSON into the transcript.
 
 ## Handle access failures
