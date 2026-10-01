@@ -1,6 +1,6 @@
 ---
 name: how
-description: Trace how code actually works: runtime flow, data movement, ownership, state, boundaries, and placement. Use for "how does X work", code walkthroughs before changing a subsystem, or questions about where code should live.
+description: 'Trace how code actually works: runtime flow, data movement, ownership, state, boundaries, and placement. Use for "how does X work", code walkthroughs before changing a subsystem, or questions about where code should live.'
 ---
 
 # How
