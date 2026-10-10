@@ -33,7 +33,7 @@ Use `--expect` for expected content, adjust `--min-chars` for legitimately short
 
 ## Document handoff
 
-Documents are written atomically beneath `${PWD}/.fetch-url-markdown-handoff/request-*/` and survive helper exit. In a Git worktree the helper adds only the applicable local rule to `.git/info/exclude` when needed.
+Documents are written atomically beneath `${PWD}/.fetch-url-markdown-handoff/request-*/` and survive helper exit. In a Git worktree the helper adds only the applicable local rule to the repository's `info/exclude` when needed, including linked worktrees with shared repository metadata.
 
 A handoff is a successful workflow transition only when both conditions hold: process exit code is exactly `10`, and stderr contains one JSON object with `"action":"handoff"`. Do not treat exit 10 as generic failure, do not accept handoff JSON with another exit status, and do not expect or create an empty Markdown output. Stable JSON fields are `action`, `source_url`, `final_url`, `content_type`, `bytes`, `sha256`, `downloaded_path`, and `suggested_skill`.
 
@@ -53,6 +53,7 @@ For provisioning, rebuilding, or upgrading the Firecrawl adapter commands,
 see [RUNTIME.md](RUNTIME.md).
 
 - Core: Python 3 and curl.
+- Document handoff: Git, used to detect worktrees and manage local exclusions.
 - HTML: `firecrawl-html-to-markdown`.
 - Browser: a Chromium-compatible browser, then Firecrawl.
 - Explicit clean mode: `firecrawl-html-extractor`.

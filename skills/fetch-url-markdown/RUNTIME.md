@@ -12,32 +12,36 @@ rebuild, or upgrade the adapters.
 | `firecrawl-html-to-markdown` | `https://github.com/firecrawl/html-to-markdown` | `1af9901a5d6101621120204f7ea3f5355fd5ea31` |
 | `firecrawl-html-extractor` | `https://github.com/firecrawl/html-extractor` | `0a2b7432a20e356c2254f17e1b0acb2e79d88917` |
 
-The Go manifest uses pseudo-version
+Both upstream default-branch commits still match these pins as of 2026-10-10;
+neither repository publishes GitHub releases. No binary upgrade is currently
+needed. The Go binary's build metadata confirms pseudo-version
 `v0.0.0-20260312013131-1af9901a5d61`, whose module checksum is
-`h1:UBDJu23HX7g13QTJGMf1PlI1MVPTQk9o/AISxgt2axo=`. The Rust manifest pins the
-full Git revision and resolves upstream package `html-extractor 0.1.0`.
+`h1:UBDJu23HX7g13QTJGMf1PlI1MVPTQk9o/AISxgt2axo=`. The recorded Rust build
+pins the full Git revision and upstream package `html-extractor 0.1.0`;
+its installed hash matches the recorded build, but its source manifest is
+currently unavailable on this machine.
 
 ## Wrapper source
 
-The exact recovered source tree on nova is:
+The former runtime record named this recovered wrapper source location:
 
 ```text
 /home/nova/.ssh/codex-state/firecrawl-wrappers/
-|-- firecrawl-html-to-markdown/
-|   |-- go.mod
-|   `-- main.go
-`-- firecrawl-html-extractor/
-    |-- Cargo.toml
-    `-- src/
-        `-- main.rs
 ```
 
-Copy both complete project directories to the host being provisioned. The
-authored recovery does not contain the original generated `go.sum` or
-`Cargo.lock`. A later Fedora build on `crafty-rope` generated and retained both
-under `/root/.local/src/firecrawl-wrappers/`; use those lockfiles when locked
-dependency reproduction is required. Do not substitute unrelated packages
-that happen to have similar command names.
+That path and `~/.local/src/` are absent on nova as of 2026-10-10. The original
+custom wrapper source and its generated lockfiles were not recovered in the
+scoped source search. The installed executables are available and verified;
+cloning the two upstream libraries alone does not recover the local adapters.
+
+Before rebuilding, obtain each complete original wrapper project:
+`go.mod`, `main.go`, and `go.sum` for the Go adapter; `Cargo.toml`,
+`src/main.rs`, and `Cargo.lock` for the Rust adapter. A historical record points
+to lockfiles on `crafty-rope` under `/root/.local/src/firecrawl-wrappers/`;
+that is another host's record, not verified local source availability. The
+build commands below apply once the wrapper source is available. Do not
+substitute unrelated packages with similar command names or claim an exact
+rebuild from library pins alone.
 
 ## Command interfaces
 
@@ -66,15 +70,20 @@ fallback.
 - Go adapter: Go 1.20 or newer. Nova used Fedora Go
   `go1.26.7-X:nodwarf5` on Linux/amd64.
 - Rust adapter: stable Cargo and rustc 1.78 or newer, plus a working C linker.
-  Nova used Fedora Cargo/rustc 1.98.0 (`1.98.0-1.fc44`) on Linux/amd64. Rust
+  The installed adapter was built with Fedora Cargo/rustc 1.98.0
+  (`1.98.0-1.fc44`) on Linux/amd64. Rust
   nightly and `rustup` are not required.
 
 Use host-local cache directories if desired. Caches are build inputs, not
 installed runtime files.
 
+The available nova toolchains checked on 2026-10-10 are Go
+`go1.26.8-X:nodwarf5` and Cargo/rustc 1.98.1. Their availability does not change
+the provenance of the existing binaries or require rebuilding them.
+
 ## Build
 
-From the copied source tree:
+Once the complete wrapper source has been recovered and checked:
 
 ```bash
 cd /path/to/firecrawl-wrappers/firecrawl-html-to-markdown
@@ -165,6 +174,8 @@ For an upgrade, inspect each upstream repository and select explicit new full
 commits. Change one wrapper dependency at a time, regenerate and retain its
 lockfile, run upstream tests where practical, build, run the direct and skill
 route checks, and install into new revision-named roots. Switch PATH symlinks
-only after validation. Retain the previous roots until rollback is no longer
-needed, then update this file and the workstation inventory with the new
+only after validation, verify the public commands, and delete superseded
+installation roots. Do not create backup or rollback copies or retain obsolete
+binaries. Preserve user data and local customizations directly. Update this
+file and the workstation inventory with the new
 commits, toolchains, paths, hashes, behavior changes, and known limitations.

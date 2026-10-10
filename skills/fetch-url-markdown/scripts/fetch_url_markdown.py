@@ -310,7 +310,12 @@ def ensure_git_ignored(root: Path) -> None:
     if subprocess.run(["git", "-C", str(repo), "check-ignore", "-q", "--", relative], check=False).returncode == 0:
         return
     rule = f"/{relative.rstrip('/')}/"
-    exclude = repo / ".git" / "info" / "exclude"
+    location = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--path-format=absolute", "--git-path", "info/exclude"],
+        text=True, capture_output=True, check=False)
+    if location.returncode != 0:
+        raise ConversionError(location.stderr.strip() or "failed to locate Git exclude file")
+    exclude = Path(location.stdout.strip())
     existing = exclude.read_text(encoding="utf-8") if exclude.exists() else ""
     if rule not in existing.splitlines():
         with exclude.open("a", encoding="utf-8") as handle:

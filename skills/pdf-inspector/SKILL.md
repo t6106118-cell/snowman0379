@@ -10,7 +10,7 @@ native-text extraction. Treat conversion as extraction with validation: a
 successful command is not proof that reading order, tables, or encoding are
 correct.
 
-The installed build exposes `pdf2md` and `detect-pdf` through
+The installed Firecrawl 1.25.2 build exposes `pdf2md` and `detect-pdf` through
 `/home/nova/.local/bin`. It has the default features only and does not perform
 OCR.
 
@@ -43,7 +43,7 @@ PDF
    ```bash
    detect-pdf "$input" --analyze --json > analysis.json
    jq '{pdf_type, page_count, pages_needing_ocr, ocr_reasons_by_page,
-        is_complex, pages_with_tables, pages_with_columns}' analysis.json
+        is_complex, pages_with_tables, pages_with_columns, cmap_gaps}' analysis.json
    ```
 
    This is the dedicated analysis command. Its observed schema uses `is_complex`,
@@ -60,7 +60,8 @@ PDF
 
    It classifies first, refuses scanned/image-only input and mixed input with
    OCR-needed pages, writes beside the destination, requires successful nonempty
-   raw Markdown, and atomically moves the result. These are mechanical checks;
+   raw Markdown, rejects directory destinations, and atomically replaces the
+   requested output file. These are mechanical checks;
    they do not establish reading order, table structure, or encoding quality. It
    does not install software or run OCR. For a pipeline or a selected-page probe,
    use raw stdout directly and perform the same checks:
@@ -129,9 +130,15 @@ extractor before escalating:
 pdftotext -layout "$input" - | sed -n '1,160p'
 ```
 
-Use `--items-json` when coordinates or font evidence matter. If low-level parser
-evidence is needed, resolve the unpromoted sibling binary from the currently
-selected installation instead of assuming `dump_ops` is on `PATH`:
+Use `--items-json` when coordinates or font evidence matter. Version 1.25.2
+also reports rotation, font weight, paint colors, and text rendering mode.
+For unmapped font codes, inspect `cmap_gaps` in analysis or extraction JSON
+alongside `has_encoding_issues` in extraction JSON. These diagnostics do not
+establish that all text was decoded correctly.
+
+If low-level parser evidence is needed, resolve the unpromoted sibling binary
+from the currently selected installation instead of assuming `dump_ops` is on
+`PATH`:
 
 ```bash
 pdf2md_real=$(readlink -f "$(command -v pdf2md)")
@@ -147,9 +154,11 @@ conversions into model context. Report interleaved columns, false tables,
 garbled text, missing pages, or other structural uncertainty instead of silently
 repairing it.
 
-This CLI does not implement conventional `--help` or `--version`: those tokens
-are treated as PDF paths. Invoking either command with no arguments prints usage
-and exits nonzero; do not use `--help` as an installation health check.
+On 1.25.2, both CLIs recognize `--help` and `-h`, print usage to stderr, and
+exit 1. There is no version-reporting flag: `--version` alone also prints usage
+and exits 1. Verify the selected version through the resolved executable path
+and Cargo installation metadata in `RUNTIME.md`; use a real PDF to check runtime
+health. Options may appear before or after the PDF path.
 
 If the user's objective is authoritative research or citation rather than PDF
 conversion, a publisher's equivalent structured HTML/XML can be preferable. An

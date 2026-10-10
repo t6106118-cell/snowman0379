@@ -34,6 +34,11 @@ if [[ ! -d "$output_dir" || ! -w "$output_dir" ]]; then
   exit 73
 fi
 
+if [[ -d "$output_abs" ]]; then
+  printf 'Error: output path is a directory: %s\n' "$output" >&2
+  exit 73
+fi
+
 if [[ "$input_real" == "$output_abs" ]]; then
   printf 'Error: refusing to overwrite the source PDF: %s\n' "$input" >&2
   exit 73
@@ -104,6 +109,6 @@ if [[ ! -s "$markdown_tmp" ]] || ! grep -q '[^[:space:]]' "$markdown_tmp"; then
   exit 65
 fi
 
-mv -f -- "$markdown_tmp" "$output_abs"
+mv -f -T -- "$markdown_tmp" "$output_abs"
 markdown_tmp=
 printf 'Wrote mechanically validated Markdown: %s\n' "$output_abs" >&2
