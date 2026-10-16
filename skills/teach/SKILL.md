@@ -4,7 +4,7 @@ description: Explain how code, systems, or technical ideas work at a depth suite
 license: MIT; see LICENSE
 metadata:
   adapted-from: cursor/plugins/pstack/skills/teach
-  upstream-revision: 2eb7ed4613cfc8f098dfe464a23680ea44d84c5e
+  upstream-revision: f713f14203cd6420cec13cd7c55c32d598dbab68
 ---
 
 # Teach a technical mechanism
@@ -23,9 +23,10 @@ These skills contribute investigation methods, not mandatory parallel agents or 
 
 - Start with the mechanism or result the reader asked about. Define only the terms needed to understand that point.
 - Pick a representative input and trace it through the actual entry point, relevant calls, transformations, state changes, and output. Use real identifiers and value shapes.
+- When explaining interactive behavior, connect that path to a concrete action the reader recognizes and the result they can observe. Show how the calls cause that result; a list of function names is not the explanation.
 - At each important boundary, identify who owns the value or state, what is copied or referenced, which operation happens, and what failure or synchronization behavior matters.
 - Distinguish language semantics, runtime behavior, operating-system interaction, and hardware behavior when that distinction explains the result. Inspect lower layers if needed; do not invent allocation, instruction, or network details from a high-level API name.
-- Explain the observed design choice using source or history evidence. Label a plausible reason as inference and an unavailable reason as unknown. Do not attribute intent to an author without evidence.
+- Explain the observed design choice using source or history evidence. Preserve the confidence and scope of the supporting findings when paraphrasing them. Label a plausible reason as inference and an unavailable reason as unknown. Do not attribute intent to an author without evidence.
 - Correct a false premise directly before building on it. Do not substitute a different claim to make the reader's statement appear true.
 
 For a mathematical or scientific concept, give the exact definitions, assumptions, claim, and a small example that satisfies them. Explain which step depends on which hypothesis. Keep a proof, a numerical experiment, and an intuition distinct; use the existing specialist math workflow when proof or citation verification is requested.
@@ -33,6 +34,8 @@ For a mathematical or scientific concept, give the exact definitions, assumption
 ## Make the relationships visible
 
 Use a compact ASCII diagram for control flow, ownership, dependencies, or state transitions when it makes the explanation easier to follow. Use a table for exact mappings or comparisons. Keep labels tied to the actual code or definitions.
+
+For a complex flow, begin with the immediate path. Add views of branches, state, or return edges progressively when that makes the mechanism clearer, keeping labels consistent between views. Match the number of diagrams to the question and the reader's needs; no fixed part count requires repeated diagrams.
 
 For example, an explanation of a queue might use this structure only after checking that it matches the implementation:
 

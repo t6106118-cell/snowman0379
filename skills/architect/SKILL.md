@@ -1,13 +1,15 @@
 ---
 name: architect
-description: Use when the user asks to architect, design, or reshape non-trivial unreleased research code. Derive the design from the smallest executable end-to-end slice, then revise the shape from runtime evidence instead of committing to speculative architecture.
+description: Use for software architecture, design decisions, or structural refactoring. Ground the design in current requirements and contracts; when implementation is authorized, validate and revise it through small executable end-to-end slices.
 ---
 
 # Architect
 
 Explicit user and project instructions take precedence over this skill.
 
-Apply the `research-code` policy when it is available. This skill adds a design workflow. It does not replace the research-code rules.
+This skill adds a design workflow. When implementation is authorized, follow applicable project instructions and standing implementation and verification rules.
+
+For design-only requests, inspect existing code and evidence, propose the minimal shape and next validation step, and label untested assumptions. Use the implementation steps below only when implementation is within the authorized task.
 
 The design is provisional. Runtime evidence has authority over the sketch.
 
@@ -23,6 +25,10 @@ Do not study unrelated subsystems before the first executable slice needs them.
 
 Write the smallest caller-visible behavior that can prove the mechanism works end to end.
 
+Before deriving types, write a concrete caller example: what is supplied, what is called, what comes back, and how failure is observed. Check that the proposed signatures support that usage directly; revise the sketch rather than making callers accommodate accidental internals.
+
+When a working path already exists, use it to investigate the design rather than rebuilding it without a concrete reason.
+
 Derive only the types, signatures, and module boundaries required by that behavior.
 
 A useful slice reaches the real unknown. Examples include one real request through parsing and output, one real file through load and write, one protocol message through encode and decode, or one command through parsing and its observable side effect.
@@ -35,7 +41,13 @@ Write a small usage sketch or type/signature sketch only when it makes the next 
 
 Prefer concrete types, explicit ownership, one authoritative representation of each state value, direct data flow, and short call paths.
 
+Trace the required reads, writes, and lookups through the proposed data structures. Address a demonstrated access requirement now; do not defer it to an unspecified future index or cache, or add either for hypothetical scale.
+
+Prefer an interface that hides meaningful policy and complexity with few concepts for the caller to coordinate. Interface depth means useful behavior behind a simple surface, not more layers or a larger general-purpose API. Include caller effort and maintenance in the cost comparison.
+
 Avoid speculative interfaces, factories for one implementation, generic registries, extension points, compatibility layers, pass-through wrappers, and modules created only because a future feature might need them.
+
+When choosing or changing module, API, or state boundaries, use [references/design-review.md](references/design-review.md) to check concrete coupling and misuse risks. Do not turn every small change into a full architecture audit.
 
 The sketch is not a contract.
 
@@ -61,7 +73,7 @@ Once behavior works, remove structure that no longer has a current reason to exi
 
 Delete one-implementation abstractions with no current substitution need, pass-through wrappers, duplicate state, compatibility branches, fallback parsers for obsolete internal formats, dead configuration paths, and defensive branches that hide programmer errors.
 
-Backward compatibility is not a design constraint for unreleased internal research code unless the user identifies a real external boundary.
+Require backward compatibility only when an explicit task requirement or established current contract needs it, including active external consumers, required formats, or persisted user data. When changing an internal API within scope, migrate current callers and remove the obsolete path.
 
 ## 7. Redesign when the pattern is wrong
 
@@ -77,12 +89,14 @@ Do not preserve the old internal architecture for consistency.
 
 Explore multiple designs only when a decision is materially expensive to reverse. Examples include a durable public protocol, persistent external data format, externally consumed API, destructive migration, or a major ownership boundary with several plausible shapes.
 
-For ordinary research code, implement the smallest plausible shape and test it.
+For decisions that are inexpensive to reverse, validate the smallest plausible shape when implementation is authorized.
 
 ## Output
 
-For small work, provide the concrete usage, minimal shape, implementation, and verification result.
+For design-only work, provide the proposed usage, minimal shape, relevant contracts, untested assumptions, and next validation step. For small implementation tasks, provide the concrete usage, minimal shape, implementation, and verification result.
 
 For larger work, maintain a concise map of the current executable path and the assumptions that remain unverified.
+
+For consequential decisions, briefly record why this shape fits, its material tradeoffs, and the strongest realistic objection. When comparing alternatives is warranted, name the viable alternative and why it lost. Keep this rationale with the existing design or project record; no fixed template, page count, or separate document is required for a small change.
 
 Do not produce a large architecture document merely because the task is non-trivial.

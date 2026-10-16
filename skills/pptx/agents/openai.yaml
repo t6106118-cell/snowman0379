@@ -1,0 +1,4 @@
+interface:
+  display_name: "PowerPoint"
+  short_description: "Create, edit, and verify PowerPoint presentations"
+  default_prompt: "Use $pptx to create or edit my PowerPoint presentation and verify the result."

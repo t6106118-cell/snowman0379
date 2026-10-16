@@ -1,6 +1,6 @@
 ---
 name: how
-description: 'Trace how code actually works: runtime flow, data movement, ownership, state, boundaries, and placement. Use for "how does X work", code walkthroughs before changing a subsystem, or questions about where code should live.'
+description: 'Trace how code actually works: runtime flow, data movement, ownership, state, boundaries, and placement. Use for "how does X work", subsystem architecture overviews, code walkthroughs before changing a subsystem, or questions about where code should live.'
 ---
 
 # How
@@ -15,9 +15,13 @@ Do not invent a cleaner architecture than the implementation actually has.
 
 Identify the exact target and what the user wants to understand.
 
+Use the installed [why skill](../why/SKILL.md) when historical motivation or design rationale is part of the question. Reuse the current trace and investigate history only where it can change the explanation.
+
 If the referent is clear from context, proceed. If it is slightly ambiguous, state the interpretation and investigate it. Do not block on a clarification that the repository can resolve.
 
 Start narrow. Expand only when the traced path requires it.
+
+For a broad architecture question, identify the distinct execution paths and responsibilities needed to answer it. Trace each relevant path, then explain how they connect through data, state, ownership, and external boundaries. Scale the investigation to the question; a narrow question needs only its own path.
 
 ## 2. Find the real entry point
 
@@ -55,9 +59,13 @@ Do not create a new layer merely because the current task needs a place to put c
 
 ## Output
 
+Briefly define unfamiliar types or services only when the reader needs them to follow the flow. Include Key concepts or a compact file map when useful; omit them when the mechanism is already clear.
+
 Use only the sections that improve the answer: Overview, Runtime flow, Data and state, Boundaries, Where things live, and Gotchas.
 
 Name real functions, types, files, commands, processes, and protocols when available.
+
+Anchor important claims about behavior or ownership to the relevant file and symbol or line so the reader can check them. Cite the evidence that establishes the claim rather than listing every file inspected.
 
 Distinguish observed behavior from inference. Say when a relevant path could not be traced. A search with no matches proves absence only in the searched scope.
 

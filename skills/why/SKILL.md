@@ -17,6 +17,8 @@ Identify the relevant current files, symbols, behavior, and definitions whose hi
 
 If the target is slightly ambiguous, state the interpretation and proceed from evidence.
 
+Treat any proposed reason in the question as a hypothesis. Check what supports it, what contradicts it, and whether another explanation fits better; correct a disproved premise before answering.
+
 ## 2. Trace source history first
 
 Use local source-control history as the default evidence source.
@@ -35,6 +37,8 @@ Do not perform a ceremonial sweep of every possible source. Search a source when
 
 Record unavailable evidence as a limitation only when its absence materially weakens the conclusion.
 
+When no rationale is found, briefly state the relevant sources, queries or symbols, and date or revision scope actually searched. Distinguish an unavailable source from a search with no results; neither proves that no rationale or event exists. Report only limits that affect the conclusion.
+
 ## 4. Inspect defensive and compatibility code carefully
 
 For retries, nil checks, timeout handling, feature flags, fallback parsing, compatibility branches, and similar defenses, determine what condition they protect against now.
@@ -43,7 +47,7 @@ Classify the condition as a current external requirement, a current internal inv
 
 Historical existence is not a current requirement.
 
-For unreleased research code, backward compatibility alone is not a reason to preserve code. If all current internal callers can move, migrate them and delete the legacy path.
+Recommend preserving compatibility when an explicit requirement or established current contract still needs it, including external consumers, required formats, and persisted user data. If current internal callers can move within scope and no current contract requires the legacy path, recommend migrating them and deleting it. An investigation alone does not authorize those edits.
 
 ## 5. Separate historical reason from current validity
 
@@ -67,11 +71,13 @@ Use these confidence classes:
 
 Never rewrite an inference as historical fact.
 
+If relevant sources disagree, cite both and check whether they concern different dates, versions, or decisions. Resolve the discrepancy where evidence permits; otherwise keep it explicit rather than selecting a cleaner narrative.
+
 ## Output
 
 Use a compact structure: Question, Code in question, Evidence, Conclusion, Competing explanations, What is unknown, and If changing this code.
 
-When a change is likely, classify current constraints as Preserve, Change, Delete, and Risk.
+When a change is likely, classify current constraints as Preserve, Change, Delete, Avoid, and Risk as relevant. Use Avoid for approaches ruled out by evidenced current constraints; retain Delete for obsolete code. Recheck historical objections before treating them as current restrictions.
 
 Prefer primary sources over retrospective summaries. Cite exact commits, pull requests, issues, files, symbols, or documents when available. Do not invent author intent. Do not treat a comment as authoritative when runtime behavior contradicts it.
 

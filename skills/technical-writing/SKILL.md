@@ -1,10 +1,10 @@
 ---
 name: technical-writing
-description: Write or revise technical documentation, tutorials, how-to guides, references, design explanations, RFCs, and PR descriptions for precise, usable prose. Use for documentation structure and substantive technical editing; use proofread-math for conservative mathematical proofreading.
+description: Write or revise technical documentation, READMEs, tutorials, how-to guides, references, design explanations, RFCs, PR descriptions, and commit messages for precise, usable prose. Use for documentation structure and substantive technical editing; use proofread-math for conservative mathematical proofreading.
 license: MIT; see LICENSE
 metadata:
   adapted-from: cursor/plugins/pstack/skills/technical-writing
-  upstream-revision: 2eb7ed4613cfc8f098dfe464a23680ea44d84c5e
+  upstream-revision: f713f14203cd6420cec13cd7c55c32d598dbab68
 ---
 
 # Technical writing
@@ -17,9 +17,9 @@ Infer the audience and purpose from the request and existing document. Ask only 
 
 | Reader's need | Primary structure |
 | --- | --- |
-| Learn by doing | Tutorial: a runnable path, observable results, and enough explanation to understand each step. |
+| Learn by doing | Tutorial: open with what the reader will build or accomplish, then provide a runnable path, observable results, and enough explanation to understand each step. |
 | Complete a specific task | How-to: prerequisites, conditional steps, commands, and checks of the result. |
-| Look up exact behavior | Reference: consistent entries for inputs, outputs, defaults, errors, and constraints. |
+| Look up exact behavior | Reference: mirror the documented API, command set, or configuration structure; use consistent entries for inputs, outputs, defaults, errors, and constraints. |
 | Understand a mechanism or decision | Explanation: the mechanism, evidence, alternatives that matter, and consequences. |
 
 Choose a primary purpose; include supporting examples or reference material when they help. Do not force a document label, an outline, or a separate file for every purpose.
@@ -49,10 +49,11 @@ Choose a primary purpose; include supporting examples or reference material when
 - Describe the observable result of a consequential step and what a realistic failure means. Do not add recovery branches for imagined failures.
 - Put destructive operations and their necessary authorization at the relevant step. Preserve the user's existing authorization rather than adding a second approval flow.
 - Use lists for sequences and tables for exact mappings or comparisons. On a terminal, use ASCII diagrams when relationships need a visual explanation. Create richer artifacts only when they serve the request.
+- Use task headings that name the action and concept headings that name the subject. Use descriptive link text that identifies the destination or its purpose; avoid "click here". Preserve the document's useful heading hierarchy.
 
 ## Adapt to the requested artifact
 
-- For a design document or RFC, explain the concrete problem, the smallest viable mechanism, evidence supporting the choice, and material unresolved decisions. Do not invent a complete architecture for unreleased research code.
+- For a design document or RFC, explain the concrete problem, the smallest viable mechanism, evidence supporting the choice, and material unresolved decisions. Keep the proposed architecture proportional to current requirements and evidence; label unsettled choices and distinguish proposed behavior from implemented behavior.
 - For a PR description, lead with the triggering problem and resulting behavior. Include meaningful validation and limitations. Use a repository template when one exists.
 - For a commit message, state the concrete change and its reason; avoid copying the whole implementation narrative.
 - Preserve an existing document's useful structure and scope. Do not make code changes merely to make the prose true.
